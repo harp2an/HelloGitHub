@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 GITHUB_API_BASE = "https://api.github.com"
-DEFAULT_TIMEOUT = 10  # seconds
+DEFAULT_TIMEOUT = 15  # seconds (increased from 10 to reduce timeout errors on slow connections)
 
 
 def get_headers(token: Optional[str] = None) -> dict:
@@ -84,48 +84,10 @@ def fetch_repo_info(owner: str, repo: str, token: Optional[str] = None) -> Optio
     return None
 
 
-def fetch_repos(repo_list: list[str], token: Optional[str] = None, delay: float = 0.5) -> list[dict]:
+def fetch_repos(repo_list: list[str], token: Optional[str] = None, delay: float = 1.0) -> list[dict]:
     """Fetch metadata for a list of repositories.
 
     Args:
         repo_list: List of "owner/repo" strings.
         token:     Optional GitHub personal access token.
-        delay:     Seconds to wait between requests to avoid rate limiting.
-
-    Returns:
-        List of repository metadata dictionaries (failures are skipped).
-    """
-    results = []
-    for entry in repo_list:
-        parts = entry.strip().split("/")
-        if len(parts) != 2:
-            logger.warning("Skipping invalid entry: %s", entry)
-            continue
-        owner, repo = parts
-        logger.info("Fetching %s/%s ...", owner, repo)
-        info = fetch_repo_info(owner, repo, token)
-        if info:
-            results.append(info)
-        time.sleep(delay)
-    return results
-
-
-if __name__ == "__main__":
-    # Quick smoke-test: fetch a handful of well-known repos
-    sample_repos = [
-        "521xueweihan/HelloGitHub",
-        "public-apis/public-apis",
-        "donnemartin/system-design-primer",
-    ]
-    github_token = os.getenv("GITHUB_TOKEN")
-    if not github_token:
-        logger.warning(
-            "GITHUB_TOKEN not set — unauthenticated requests are rate-limited to 60/hour."
-        )
-
-    repo_data = fetch_repos(sample_repos, token=github_token)
-    for item in repo_data:
-        print(
-            f"[{item['language']}] {item['full_name']} "
-            f"⭐ {item['stars']:,}  —  {item['description']}"
-        )
+   
